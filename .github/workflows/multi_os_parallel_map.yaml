@@ -1,0 +1,106 @@
+name: Parallel map notebook tests
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+defaults:
+  run:
+    shell: bash -el {0}
+
+jobs:
+  parallel-map-notebooks:
+    name: ${{ matrix.os }} / Python ${{ matrix.python-version }}
+
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
+
+        python-version:
+          - "3.11"
+          - "3.12"
+          - "3.13"
+          - "3.14"
+          - "3.15"
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup Conda
+        uses: conda-incubator/setup-miniconda@v4
+        with:
+          miniforge-version: latest
+          activate-environment: test-environment
+          python-version: ${{ matrix.python-version }}
+          channels: conda-forge
+          conda-remove-defaults: "true"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+
+          python -m pip install \
+            numpy \
+            scipy \
+            matplotlib \
+            jupyter \
+            jupytext \
+            pytest \
+            nbmake
+
+          python -m pip install \
+            git+https://github.com/veronikakurth/qutip@python_315_support
+
+      - name: Show environment
+        run: |
+          python --version
+          python -c "import sys; print(sys.executable)"
+          python -m pip list
+
+      - name: Prepare notebooks
+        run: |
+          mkdir -p notebooks/time-evolution
+
+          notebooks=(
+            "time-evolution/017_smesolve-jc-photocurrent.md"
+            "time-evolution/010_brmesolve_phonon_interaction.md"
+            "time-evolution/016_smesolve-inefficient-detection.md"
+            "time-evolution/022_v5_paper-smesolve.md"
+            "time-evolution/015_smesolve-heterodyne.md"
+            "time-evolution/018_measures-trajectories-cats-kerr.md"
+            "time-evolution/013_nonmarkovian_monte_carlo.md"
+            "time-evolution/026_v5_paper-nm_mcsolve.md"
+          )
+
+          for notebook in "${notebooks[@]}"; do
+            cp "tutorials-v5/${notebook}" "notebooks/${notebook}"
+          done
+
+          find notebooks -name '*.md' \
+            -exec jupytext --to notebook {} +
+
+          find notebooks -name '*.md' -delete
+
+      - name: Run notebook tests
+        run: |
+          cd notebooks
+
+          pytest \
+            --nbmake \
+            --overwrite \
+            --nbmake-timeout=900 \
+            time-evolution/*.ipynb
+
+      - name: Upload executed notebooks
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: executed-notebooks-${{ runner.os }}-py${{ matrix.python-version }}
+          path: notebooks/**/*.ipynb
