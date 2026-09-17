@@ -65,10 +65,10 @@ jobs:
     - name: Install QuTiP
       run: |
         pip install --upgrade pip
+        python -m pip install "jax<0.7.0" "jax[cpu]<0.7.0" equinox diffrax
         python -m pip install "${{ matrix.qutip-install-spec }}"
         python -m pip install "${{ matrix.qip-install-spec }}"
         if [[ "${{ matrix.qutip-version == '5' }}" ]]; then
-          python -m pip install "jax<0.7.0" "jax[cpu]<0.7.0" equinox diffrax
           python -m pip install --no-deps "${{ matrix.jax-install-spec }}"
         fi
         python -m pip install --no-deps git+https://github.com/qutip/qutip-qtrl
