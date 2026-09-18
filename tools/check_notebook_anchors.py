@@ -5,6 +5,11 @@ import sys
 from pathlib import Path
 
 
+# Validate anchors w.r.t. rendering rules of
+# 1. nbviewer (used for tutorials on the website)
+# 2. JupyterLab 4.6 (used by try-qutip web app)
+# Additionally, ensure there are no duplicates among anchors
+
 HEADING = re.compile(r"^#{1,6}\s+(.+?)\s*$")
 ANCHOR = re.compile(r"\[[^\]]*\]\(#([^)]+)\)")
 
@@ -14,16 +19,24 @@ def heading_anchor(text):
 
 
 def check(path):
-    text = path.read_text(encoding="utf-8")
-    lines = text.splitlines()
+    lines = path.read_text(encoding="utf-8").splitlines()
 
-    anchors = {
-        heading_anchor(m.group(1))
-        for line in lines
-        if (m := HEADING.match(line))
-    }
-
+    anchors = {}
     errors = 0
+
+    for lineno, line in enumerate(lines, 1):
+        if match := HEADING.match(line):
+            anchor = heading_anchor(match.group(1))
+
+            if anchor in anchors:
+                print(
+                    f"::error file={path},line={lineno}::"
+                    f"Duplicate anchor '#{anchor}' "
+                    f"(first defined on line {anchors[anchor]})"
+                )
+                errors += 1
+            else:
+                anchors[anchor] = lineno
 
     for lineno, line in enumerate(lines, 1):
         for anchor in ANCHOR.findall(line):
@@ -38,7 +51,6 @@ def check(path):
 
 
 root = Path(sys.argv[1] if len(sys.argv) > 1 else ".")
-files = root.rglob("*.md")
+errors = sum(check(path) for path in root.rglob("*.md"))
 
-errors = sum(check(path) for path in files)
 sys.exit(bool(errors))
