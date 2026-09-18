@@ -50,7 +50,11 @@ def check(path):
     return errors
 
 
-root = Path(sys.argv[1] if len(sys.argv) > 1 else ".")
-errors = sum(check(path) for path in root.rglob("*.md"))
+files = list(root.rglob("*.md"))
 
+if not files:
+    print(f"error: no Markdown files found under {root}")
+    sys.exit(2)
+
+errors = sum(check(path) for path in files)
 sys.exit(bool(errors))
