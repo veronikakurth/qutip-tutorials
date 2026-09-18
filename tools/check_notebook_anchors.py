@@ -49,7 +49,7 @@ def check(path):
 
     return errors
 
-
+root = Path(sys.argv[1] if len(sys.argv) > 1 else ".")
 files = list(root.rglob("*.md"))
 
 if not files:
