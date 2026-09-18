@@ -25,20 +25,6 @@ def check(path):
     errors = 0
 
     for lineno, line in enumerate(lines, 1):
-        if match := HEADING.match(line):
-            anchor = heading_anchor(match.group(1))
-
-            if anchor in anchors:
-                print(
-                    f"::error file={path},line={lineno}::"
-                    f"Duplicate anchor '#{anchor}' "
-                    f"(first defined on line {anchors[anchor]})"
-                )
-                errors += 1
-            else:
-                anchors[anchor] = lineno
-
-    for lineno, line in enumerate(lines, 1):
         for anchor in ANCHOR.findall(line):
             if anchor not in anchors:
                 print(
