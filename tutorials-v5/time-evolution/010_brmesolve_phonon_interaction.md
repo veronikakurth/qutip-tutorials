@@ -186,22 +186,22 @@ plt.title("Quantum-dot-phonon interaction spectrum");
 The Bloch-Redfield master equation solver takes the Hamiltonian time-dependence in list-string format. We calculate the final population at the end of the interaction of the pulse with the system, which represents the population initialized into the excited state.
 
 ```python
-# we will calculate the dot population expectation value
-e_ops = [sm.dag() * sm]
-
-
-# initialize BRSolver
-H = QobjEvo([[H_S, 'wd'], [H_I, 'Om * ' + pulse_shape]],
-            args={'wd': 0.0, 'Om': 0.0})
-
-spectrum = coefficient(spectra_cb_numerical, args={'w': 0})
-solver = BRSolver(H, [[a_op, spectrum]])
 
 
 # define callback for parallelization
 def brme_step(args):
     # extract coefficients for the Hamiltonian
     args = {'wd': args[0], 'Om': args[1]}
+    # we will calculate the dot population expectation value
+    e_ops = [sm.dag() * sm]
+
+
+    # initialize BRSolver
+    H = QobjEvo([[H_S, 'wd'], [H_I, 'Om * ' + pulse_shape]],
+                args={'wd': 0.0, 'Om': 0.0})
+
+    spectrum = coefficient(spectra_cb_numerical, args={'w': 0})
+    solver = BRSolver(H, [[a_op, spectrum]])
 
     # run the solver
     res = solver.run(psi0, tlist, e_ops=e_ops, args=args)
